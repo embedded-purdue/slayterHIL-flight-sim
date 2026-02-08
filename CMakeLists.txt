@@ -41,6 +41,8 @@ target_include_directories(proto_lib PUBLIC
 
 # ---- Executables ------------------------------------------------------------
 
+add_executable(json_test utils/json_utils.cpp)
+
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/physics/rigid_body.cpp
@@ -52,6 +54,11 @@ add_executable(UDPServer
 
 add_executable(UDPClient
   src/UDPClient.cpp
+)
+
+target_link_libraries(json_test
+  PRIVATE
+    nlohmann_json::nlohmann_json
 )
 
 target_link_libraries(${PROJECT_NAME}
