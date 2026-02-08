@@ -1,46 +1,60 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <vector>
+#include "json.hpp" // Make sure you have this file
 
-// Include the library (adjust path if you put it in a subfolder)
-#include "json.hpp"
-
-// For convenience
 using json = nlohmann::json;
 
-int read_json(int *message_id, int *timestamp) {
-    // 1. Open the file stream
-    std::ifstream f("config.json");
+struct TrajectoryPoint {
+    int message_id;
+    double timestamp;
+    double x_pos;
+    double y_pos;
+    double z_pos;
+    double x_vel;
+    double y_vel;
+    double z_vel;
+};
 
+// The Helper Function
+void readTrajectoryData(const std::string& filename, std::vector<TrajectoryPoint>* outData) {
+    std::ifstream f(filename);
+    
     if (!f.is_open()) {
-        std::cerr << "Could not open config.json!" << std::endl;
-        return 1;
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return;
     }
 
-    // 2. Parse the file into a JSON object
-    // The library handles parsing directly from the stream
-    json data;
+    // Parse the file into a generic JSON object
+    json j_complete;
     try {
-        data = json::parse(f);
+        f >> j_complete;
     } catch (const json::parse_error& e) {
-        std::cerr << "Parse error: " << e.what() << std::endl;
-        return 1;
+        std::cerr << "JSON Parse Error: " << e.what() << std::endl;
+        return;
     }
 
-    // 3. Fill your variables
-    // You can access fields using brackets ["key"]
-    std::string serverName = data["server_name"];
-    int maxPlayers = data["max_players"];
-    double gravity = data["gravity"];
+    // Ensure we empty the vector before writing to it
+    outData->clear();
 
-    // 4. Accessing nested objects
-    bool spectatorMode = data["features"]["spectator_mode"];
+    // Iterate through the JSON array
+    for (const auto& item : j_complete) {
+        TrajectoryPoint p;
 
-    // Output to verify
-    std::cout << "Server: " << serverName << "\n";
-    std::cout << "Players: " << maxPlayers << "\n";
-    std::cout << "Gravity: " << gravity << "\n";
-    std::cout << "Spectator: " << (spectatorMode ? "On" : "Off") << std::endl;
+        // Fill the struct variables
+        // We use .value() to be safe (provides a default 0 if key is missing)
+        p.message_id = item.value("Message_id", 0);
+        p.timestamp  = item.value("Timestamp", 0.0);
+        
+        p.x_pos = item.value("X_pos", 0.0);
+        p.y_pos = item.value("Y_pos", 0.0);
+        p.z_pos = item.value("Z_pos", 0.0);
+        
+        p.x_vel = item.value("X_vel_ext", 0.0);
+        p.y_vel = item.value("Y_vel_ext", 0.0);
+        p.z_vel = item.value("Z_vel_ext", 0.0);
 
-    return 0;
+        // Push into the vector via the pointer
+        outData->push_back(p);
+    }
 }
