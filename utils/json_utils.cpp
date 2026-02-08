@@ -8,7 +8,7 @@
 // For convenience
 using json = nlohmann::json;
 
-int read_json(int *message_id, int *timestamp, ) {
+int read_json(int *message_id, int *timestamp) {
     // 1. Open the file stream
     std::ifstream f("config.json");
 

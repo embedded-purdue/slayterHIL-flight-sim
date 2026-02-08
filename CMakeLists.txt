@@ -8,20 +8,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(Protobuf REQUIRED) # provides protobuf::libprotobuf and (often) protobuf::protoc
+find_package(nlohmann_json REQUIRED) # <-- add this (apt: nlohmann-json3-dev)
 
 # ---- Proto setup -------------------------------------------------------------
 
-# Your .proto files live here (source tree)
 set(PROTO_DIR ${CMAKE_SOURCE_DIR}/../shared/proto)
 file(GLOB PROTO_FILES "${PROTO_DIR}/*.proto")
 
-# Where generated files will go (build tree)
 set(GEN_PROTO_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
 file(MAKE_DIRECTORY ${GEN_PROTO_DIR})
 
 add_library(proto_lib STATIC)
 
-# Generate C++ sources into the build dir
 protobuf_generate(
   TARGET proto_lib
   LANGUAGE cpp
@@ -36,31 +34,42 @@ message(STATUS "proto_lib sources: ${_srcs}")
 
 target_link_libraries(proto_lib PUBLIC protobuf::libprotobuf)
 
-# Consumers need both the generated headers and (optionally) the original tree
 target_include_directories(proto_lib PUBLIC
   ${GEN_PROTO_DIR}
   ${PROTO_DIR}
 )
 
-# Source files (relative paths)
+# ---- Executables ------------------------------------------------------------
+
 add_executable(${PROJECT_NAME}
-    src/main.cpp
+  src/main.cpp
+  src/physics/rigid_body.cpp
 )
+
 add_executable(UDPServer
-    src/UDPServer.cpp
+  src/UDPServer.cpp
 )
+
 add_executable(UDPClient
-    src/UDPClient.cpp
+  src/UDPClient.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE proto_lib Eigen3::Eigen)
-target_link_libraries(UDPServer PRIVATE proto_lib)
-target_link_libraries(UDPClient PRIVATE proto_lib)
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+    proto_lib
+    Eigen3::Eigen
+    nlohmann_json::nlohmann_json
+)
 
-add_executable(${PROJECT_NAME}
-    src/main.cpp
-    src/physics/rigid_body.cpp)
+target_link_libraries(UDPServer
+  PRIVATE
+    proto_lib
+    nlohmann_json::nlohmann_json
+)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${EIGEN3_INCLUDE_DIR})
+target_link_libraries(UDPClient
+  PRIVATE
+    proto_lib
+    nlohmann_json::nlohmann_json
+)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
